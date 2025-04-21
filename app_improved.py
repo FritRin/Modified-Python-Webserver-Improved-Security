@@ -5,6 +5,7 @@
 
 import uuid
 import secrets
+import random, socket, zen_utils
 from flask import (Flask, abort, flash, get_flashed_messages,
                    redirect, render_template, request, session, url_for)
 
@@ -36,8 +37,7 @@ def logout():
     
     session.clear()
 
-    html = "<title>Logged out</title>"
-    return html
+    return render_template('logout.html')
 
 @app.route('/')
 def index():
@@ -49,25 +49,33 @@ def index():
 @app.route('/restricted', methods=['GET', 'POST'])
 def restricted():
     username = session.get('username')
-    #if not username:
-        #return redirect(url_for('login'))
+    if not username:
+        return redirect(url_for('login'))
         
     # It's a get request and the user is logged in
     token = session.get('csrf_token')
     if token:
         if request.method == 'GET':
-            return render_template('restricted.html')
+            return render_template('restricted.html', csrf_token = token)
     
-    #if (request.method == 'POST') :
-    #JUST ENOUGH CODE TO PASS THE TEST - REMEMBER TO IMPLEMENT THIS PROPERLY
-    # PER THE REQUIREMENTS  
-        # Return some html with three aphorisms as the test expects.
-        #html = "<title>Aphorisms from The Zen of Python</title>"
-        #html += "<p>Beautiful is better than ugly.</p>"
-        #html += "<p>Simple is better than complex.</p>"
-        #html += "<p>Explicit is better than implicit.</p>"
-        #return html
+    if (request.method == 'POST'):
+        if token:
+            aphorisms = client(('127.0.0.1', 1060))
+            return render_template('aphorisms.html', aphorisms = aphorisms)
+
+def client(address):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect(address)
+
+    aphorisms = list(zen_utils.aphorisms)
+    results = []
+    for aphorism in random.sample(aphorisms, 3):
+        sock.sendall(aphorism)
+        response = aphorism.decode().strip().replace('?', ' ') + ((zen_utils.recv_until(sock, b'.')).decode().lower()).strip()
+        results.append(response)
     
+    sock.close()
+    return results
 
 
 if __name__ == '__main__':

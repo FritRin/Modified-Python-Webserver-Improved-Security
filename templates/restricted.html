@@ -5,10 +5,10 @@
     <title>Restricted</title> 
 </head> 
 <body> 
-    <h1>Log in</h1> 
+    <h1>Restricted</h1> 
     <form action="./restricted" method="post"> 
         <p> 
-            <input type="hidden" id="csrf_token" name="csrf_token"> 
+            <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token }}"> 
             <button type="submit" id="request">Request Aphorism</button> 
         </p> 
 </form> 
