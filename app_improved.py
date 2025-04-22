@@ -5,6 +5,7 @@
 
 import uuid
 import secrets
+import ssl
 import random, socket, zen_utils
 from flask import (Flask, abort, flash, get_flashed_messages,
                    redirect, render_template, request, session, url_for)
@@ -44,7 +45,7 @@ def index():
     username = session.get('username')
     if not username:
         return redirect(url_for('login'))
-    return render_template('success.html')
+    return render_template('index.html')
 
 @app.route('/restricted', methods=['GET', 'POST'])
 def restricted():
@@ -60,24 +61,27 @@ def restricted():
     
     if (request.method == 'POST'):
         if token:
-            aphorisms = client(('127.0.0.1', 1060))
+            aphorisms = get_aphorisms(('localhost', 1060), cafile='server.crt', host='localhost')
             return render_template('aphorisms.html', aphorisms = aphorisms)
 
-def client(address):
+def get_aphorisms(address, cafile=None, host=None):
+    purpose = ssl.Purpose.SERVER_AUTH
+    context = ssl.create_default_context(purpose, cafile=cafile)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(address)
+    ssl_sock = context.wrap_socket(sock, server_hostname=host)
 
     aphorisms = list(zen_utils.aphorisms)
     results = []
     for aphorism in random.sample(aphorisms, 3):
-        sock.sendall(aphorism)
-        response = aphorism.decode().strip().replace('?', ' ') + ((zen_utils.recv_until(sock, b'.')).decode().lower()).strip()
+        ssl_sock.sendall(aphorism)
+        response = aphorism.decode().strip().replace('?', ' ') + ((zen_utils.recv_until(ssl_sock, b'.')).decode().lower()).strip()
         results.append(response)
     
-    sock.close()
+    ssl_sock.close()
     return results
 
 
 if __name__ == '__main__':
     app.debug = True
-    app.run()
+    app.run(ssl_context=('server.crt', 'server.key'))

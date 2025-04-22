@@ -4,8 +4,22 @@
 # Single-threaded server that serves one client at a time; others must wait.
 
 import zen_utils
+import argparse
+import ssl
 
 if __name__ == '__main__':
-    address = zen_utils.parse_command_line('simple single-threaded server')
+    parser = argparse.ArgumentParser(description='Example client')
+    parser.add_argument('host', help='IP or hostname')
+    parser.add_argument('cafile', help='Path to a CA certificate file')
+    parser.add_argument('certfile', help='Path to a certificate key/pem file')
+    parser.add_argument('-e', action='store_true', help='cause an error')
+    parser.add_argument('-p', metavar='port', type=int, default=1060,
+                        help='TCP port (default 1060)')
+    args = parser.parse_args()
+    address = (args.host, args.p)
+
     listener = zen_utils.create_srv_socket(address)
-    zen_utils.accept_connections_forever(listener)
+    purpose = ssl.Purpose.CLIENT_AUTH
+    context = ssl.create_default_context(purpose, cafile=args.cafile)
+    context.load_cert_chain(args.certfile)
+    zen_utils.accept_connections_forever(listener, context)

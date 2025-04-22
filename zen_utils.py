@@ -4,6 +4,7 @@
 # Constants and routines for supporting a certain network conversation.
 
 import argparse, socket, time
+import ssl
 
 aphorisms = {b'Beautiful is better than?': b'Ugly.',
              b'Explicit is better than?': b'Implicit.',
@@ -33,12 +34,13 @@ def create_srv_socket(address):
     print('Listening at {}'.format(address))
     return listener
 
-def accept_connections_forever(listener):
+def accept_connections_forever(listener, context):
     """Forever answer incoming connections on a listening socket."""
     while True:
         sock, address = listener.accept()
         print('Accepted connection from {}'.format(address))
-        handle_conversation(sock, address)
+        ssl_sock = context.wrap_socket(sock, server_side=True)
+        handle_conversation(ssl_sock, address)
 
 def handle_conversation(sock, address):
     """Converse with a client over `sock` until they are done talking."""
