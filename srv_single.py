@@ -23,5 +23,6 @@ if __name__ == '__main__':
     purpose = ssl.Purpose.CLIENT_AUTH
     context = ssl.create_default_context(purpose, cafile=args.cafile)
     context.load_cert_chain(args.certificate, args.keyfile)
+    context.verify_mode = ssl.CERT_REQUIRED
     context.check_hostname = False
     zen_utils.accept_connections_forever(listener, context)

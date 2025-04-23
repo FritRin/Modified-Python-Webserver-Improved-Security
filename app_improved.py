@@ -7,6 +7,7 @@ import uuid
 import secrets
 import ssl
 import random, socket, zen_utils
+import logging
 from flask import (Flask, abort, flash, get_flashed_messages,
                    redirect, render_template, request, session, url_for)
 
@@ -18,24 +19,38 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Strict',
 )
 
+logging.basicConfig(
+    format='%(asctime)s:%(levelname)s:%(message)s',
+    filename='csc2330app.log',
+    encoding='utf-8',
+    level=logging.DEBUG,
+)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     username = request.form.get('username', '')
     password = request.form.get('password', '')
+    ip = request.remote_addr
+
     if request.method == 'POST':
         if (username, password) in [('u1163857', 'csc2330a3'), ('u1163857', 't12025')]:
             session['username'] = username
             session['csrf_token'] = uuid.uuid4().hex
+            logging.info(f"SECURITY: IP {ip} successfully logged in with username {username}")
             return redirect(url_for('index'))
+        else:
+            logging.info(f"SECURITY: IP {ip} failed to log in with username {username}")
     return render_template('login.html', username=username)
 
 @app.route('/logout')
 def logout():
     username = session.get('username')
+    ip = request.remote_addr
 
     if not username:
         return redirect(url_for('login'))
     
+    logging.info(f"SECURITY: IP {ip} logged out with username {username}")
     session.clear()
 
     return render_template('logout.html')
@@ -61,6 +76,8 @@ def restricted():
     
     if (request.method == 'POST'):
         if token:
+            ip = request.remote_addr
+            logging.info(f"SECURITY: IP {ip} requested aphorisms with username {username}")
             aphorisms = get_aphorisms(('localhost', 1060), cafile='ca.crt')
             return render_template('aphorisms.html', aphorisms=aphorisms)
 
