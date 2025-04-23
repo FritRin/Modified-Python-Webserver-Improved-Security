@@ -11,7 +11,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Example client')
     parser.add_argument('host', help='IP or hostname')
     parser.add_argument('cafile', help='Path to a CA certificate file')
-    parser.add_argument('certfile', help='Path to a certificate key/pem file')
+    parser.add_argument('certificate', help='Path to crt file')
+    parser.add_argument('keyfile', help='Path to a certificate key/pem file')
     parser.add_argument('-e', action='store_true', help='cause an error')
     parser.add_argument('-p', metavar='port', type=int, default=1060,
                         help='TCP port (default 1060)')
@@ -21,5 +22,6 @@ if __name__ == '__main__':
     listener = zen_utils.create_srv_socket(address)
     purpose = ssl.Purpose.CLIENT_AUTH
     context = ssl.create_default_context(purpose, cafile=args.cafile)
-    context.load_cert_chain(args.certfile)
+    context.load_cert_chain(args.certificate, args.keyfile)
+    context.check_hostname = False
     zen_utils.accept_connections_forever(listener, context)

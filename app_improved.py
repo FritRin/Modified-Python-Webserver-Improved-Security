@@ -55,21 +55,23 @@ def restricted():
         
     # It's a get request and the user is logged in
     token = session.get('csrf_token')
-    if token:
-        if request.method == 'GET':
-            return render_template('restricted.html', csrf_token = token)
+    if (request.method == 'GET'):
+        if token:
+            return render_template('restricted.html', csrf_token=token)
     
     if (request.method == 'POST'):
         if token:
-            aphorisms = get_aphorisms(('localhost', 1060), cafile='server.crt', host='localhost')
-            return render_template('aphorisms.html', aphorisms = aphorisms)
+            aphorisms = get_aphorisms(('localhost', 1060), cafile='ca.crt')
+            return render_template('aphorisms.html', aphorisms=aphorisms)
 
-def get_aphorisms(address, cafile=None, host=None):
+def get_aphorisms(address, cafile=None):
     purpose = ssl.Purpose.SERVER_AUTH
     context = ssl.create_default_context(purpose, cafile=cafile)
+    context.load_cert_chain(certfile='frontend.crt', keyfile='frontend.key')
+    context.check_hostname = False
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect(address)
-    ssl_sock = context.wrap_socket(sock, server_hostname=host)
+    ssl_sock = context.wrap_socket(sock)
 
     aphorisms = list(zen_utils.aphorisms)
     results = []
@@ -84,4 +86,4 @@ def get_aphorisms(address, cafile=None, host=None):
 
 if __name__ == '__main__':
     app.debug = True
-    app.run(ssl_context=('server.crt', 'server.key'))
+    app.run(ssl_context=('www.crt', 'www.key'))
